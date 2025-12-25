@@ -12,6 +12,7 @@ from typing import Dict, Any, List, Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, HttpUrl, Field
 
 from modules.job_manager import JobManager, JobStatus, ScrapingJob
@@ -255,6 +256,29 @@ async def cleanup_jobs(max_age_hours: int = Query(24, description="Maximum age i
     
     job_manager.cleanup_old_jobs(max_age_hours=max_age_hours)
     return {"message": f"Cleaned up jobs older than {max_age_hours} hours"}
+
+
+@app.get("/debug/screenshot/{filename}", summary="Download Debug Screenshot")
+async def download_screenshot(filename: str):
+    """Download debug screenshot files (screenshot_*.png or page_*.html)"""
+    # Whitelist allowed files
+    allowed_files = [
+        "screenshot_after_cookies.png",
+        "screenshot_before_click.png",
+        "page_after_cookies.html",
+        "page_before_click.html"
+    ]
+    
+    if filename not in allowed_files:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    
+    file_path = f"/tmp/{filename}"
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail=f"File {filename} not found. Run a scrape job first.")
+    
+    media_type = "image/png" if filename.endswith(".png") else "text/html"
+    return FileResponse(file_path, media_type=media_type, filename=filename)
 
 
 if __name__ == "__main__":

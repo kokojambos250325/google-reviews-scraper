@@ -1237,6 +1237,14 @@ class GoogleReviewsScraper:
 
             # Add Google authentication cookies before navigating to Maps
             self.add_google_cookies(driver)
+            
+            # Remove locale-specific cookies to force English
+            try:
+                driver.delete_cookie('NID')  # Contains locale preferences
+                driver.delete_cookie('GOOGLE_ABUSE_EXEMPTION')
+                log.info("Removed locale cookies to force English")
+            except:
+                pass
 
             # Navigate to URL with English locale to ensure Reviews tab is shown
             # Force English interface regardless of cookie locale
@@ -1260,6 +1268,14 @@ class GoogleReviewsScraper:
                 with open(html_path_1, 'w', encoding='utf-8') as f:
                     f.write(driver.page_source)
                 log.info(f"💾 HTML saved: {html_path_1}")
+                
+                # Log tab structure for debugging
+                tabs_html = driver.execute_script(
+                    """return Array.from(document.querySelectorAll('[role="tab"]')).map(tab => 
+                        `<button role="tab" aria-label="${tab.getAttribute('aria-label')}" data-tab-index="${tab.getAttribute('data-tab-index')}">${tab.textContent}</button>`
+                    ).join('\n\n');"""
+                )
+                log.info(f"\n========== TABS HTML ==========\n{tabs_html}\n========== END TABS HTML ==========")
             except Exception as e:
                 log.warning(f"Could not save screenshot/HTML: {e}")
 
