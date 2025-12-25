@@ -263,13 +263,21 @@ class GoogleReviewsScraper:
             driver.get("https://www.google.com")
             time.sleep(1)
             
-            # Check if we have real cookies from environment
-            env_cookies = os.environ.get('GOOGLE_COOKIES', '')
+            # Check if we have real cookies from environment (support multiple env vars)
+            all_cookies = []
+            for i in ['', ' 2', ' 3', '_2', '_3']:
+                env_key = f'GOOGLE_COOKIES{i}'
+                env_cookies = os.environ.get(env_key, '')
+                if env_cookies:
+                    log.info(f"Loading cookies from {env_key}")
+                    all_cookies.append(env_cookies)
             
-            if env_cookies:
-                log.info("Loading Google cookies from environment variable")
+            if all_cookies:
+                # Combine all cookie strings
+                combined_cookies = '; '.join(all_cookies)
+                log.info(f"Loading Google cookies from {len(all_cookies)} environment variable(s)")
                 # Parse cookie string format: "name1=value1; name2=value2; ..."
-                cookie_pairs = env_cookies.split('; ')
+                cookie_pairs = combined_cookies.split('; ')
                 for pair in cookie_pairs:
                     if '=' in pair:
                         name, value = pair.split('=', 1)
