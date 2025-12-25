@@ -430,6 +430,15 @@ class GoogleReviewsScraper:
                 for element in elements:
                     attempts += 1
 
+                    # DEBUG: Log element details
+                    try:
+                        elem_text = element.text.strip()
+                        elem_aria = element.get_attribute('aria-label') or ''
+                        elem_index = element.get_attribute('data-tab-index') or ''
+                        log.info(f"Checking tab: text='{elem_text}', aria-label='{elem_aria}', data-tab-index='{elem_index}'")
+                    except:
+                        pass
+
                     # First check if this is actually a reviews tab
                     if not self.is_reviews_tab(element):
                         continue
