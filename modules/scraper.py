@@ -181,6 +181,13 @@ class GoogleReviewsScraper:
         log.info(f"Python version: {platform.python_version()}")
         log.info("Using SeleniumBase UC Mode for enhanced anti-detection")
 
+        # Check for proxy configuration
+        proxy_url = os.environ.get('PROXY_URL')  # Format: http://user:pass@host:port
+        if proxy_url:
+            log.info(f"✅ Proxy configured: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+        else:
+            log.info("⚠️ No proxy configured - using direct connection")
+
         # Determine if we're running in a container
         in_container = os.environ.get('CHROME_BIN') is not None
 
@@ -196,6 +203,7 @@ class GoogleReviewsScraper:
                         uc=True,
                         headless=headless,
                         binary_location=chrome_binary,
+                        proxy=proxy_url,
                         page_load_strategy="normal"
                     )
                     log.info("Successfully created SeleniumBase UC driver with custom binary")
@@ -205,6 +213,7 @@ class GoogleReviewsScraper:
                     driver = Driver(
                         uc=True,
                         headless=headless,
+                        proxy=proxy_url,
                         page_load_strategy="normal"
                     )
                     log.info("Successfully created SeleniumBase UC driver with defaults")
@@ -212,6 +221,7 @@ class GoogleReviewsScraper:
                 driver = Driver(
                     uc=True,
                     headless=headless,
+                    proxy=proxy_url,
                     page_load_strategy="normal"
                 )
                 log.info("Successfully created SeleniumBase UC driver")
@@ -222,6 +232,7 @@ class GoogleReviewsScraper:
                 driver = Driver(
                     uc=True,
                     headless=headless,
+                    proxy=proxy_url,
                     page_load_strategy="normal",
                     incognito=True  # Use incognito mode for better stealth
                 )
