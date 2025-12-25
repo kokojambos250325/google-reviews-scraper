@@ -1266,6 +1266,17 @@ class GoogleReviewsScraper:
             driver.get(url_with_locale)
             wait.until(lambda d: "google.com/maps" in d.current_url)
             
+            # Wait for sidebar to load before taking screenshot
+            try:
+                log.info("Waiting for sidebar with tabs to load...")
+                WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, '[role="tab"]'))
+                )
+                time.sleep(2)  # Extra time for tabs to render
+                log.info("Sidebar loaded successfully")
+            except Exception as e:
+                log.warning(f"Sidebar may not have loaded: {e}")
+            
             # SCREENSHOT 1: After loading page with cookies
             try:
                 screenshot_path_1 = "/tmp/screenshot_after_cookies.png"
