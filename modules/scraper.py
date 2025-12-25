@@ -256,26 +256,49 @@ class GoogleReviewsScraper:
     def add_google_cookies(self, driver: Chrome):
         """
         Add Google authentication cookies to driver for accessing reviews.
-        This helps bypass login requirements and see full review content.
+        Uses environment variable GOOGLE_COOKIES for real authenticated session.
         """
         try:
             # Navigate to Google first to set cookies
             driver.get("https://www.google.com")
             time.sleep(1)
             
-            # Add essential Google cookies
-            google_cookies = [
-                {"name": "NID", "value": "519=dummy_value", "domain": ".google.com"},
-                {"name": "CONSENT", "value": "YES+", "domain": ".google.com"},
-                {"name": "SOCS", "value": "CAESEwgDEgk2MTkzMzExNTUaAmVuIAEaBgiA_LyxBg", "domain": ".google.com"},
-            ]
+            # Check if we have real cookies from environment
+            env_cookies = os.environ.get('GOOGLE_COOKIES', '')
             
-            for cookie in google_cookies:
-                try:
-                    driver.add_cookie(cookie)
-                    log.debug(f"Added cookie: {cookie['name']}")
-                except Exception as e:
-                    log.debug(f"Could not add cookie {cookie['name']}: {e}")
+            if env_cookies:
+                log.info("Loading Google cookies from environment variable")
+                # Parse cookie string format: "name1=value1; name2=value2; ..."
+                cookie_pairs = env_cookies.split('; ')
+                for pair in cookie_pairs:
+                    if '=' in pair:
+                        name, value = pair.split('=', 1)
+                        try:
+                            driver.add_cookie({
+                                'name': name.strip(),
+                                'value': value.strip(),
+                                'domain': '.google.com'
+                            })
+                            log.debug(f"Added cookie: {name}")
+                        except Exception as e:
+                            log.debug(f"Could not add cookie {name}: {e}")
+                
+                log.info(f"Added {len(cookie_pairs)} cookies from environment")
+            else:
+                # Fallback to dummy cookies if no env cookies provided
+                log.info("No GOOGLE_COOKIES env var found, using fallback cookies")
+                google_cookies = [
+                    {"name": "NID", "value": "519=dummy_value", "domain": ".google.com"},
+                    {"name": "CONSENT", "value": "YES+", "domain": ".google.com"},
+                    {"name": "SOCS", "value": "CAESEwgDEgk2MTkzMzExNTUaAmVuIAEaBgiA_LyxBg", "domain": ".google.com"},
+                ]
+                
+                for cookie in google_cookies:
+                    try:
+                        driver.add_cookie(cookie)
+                        log.debug(f"Added fallback cookie: {cookie['name']}")
+                    except Exception as e:
+                        log.debug(f"Could not add cookie {cookie['name']}: {e}")
             
             log.info("Google cookies added successfully")
             return True
