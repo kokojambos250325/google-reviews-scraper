@@ -320,15 +320,24 @@ class GoogleReviewsScraper:
         Uses multiple detection approaches for maximum reliability.
         """
         try:
-            # Strategy 1: Data attribute detection (most reliable across languages)
-            tab_index = tab.get_attribute("data-tab-index")
-            if tab_index == "1" or tab_index == "reviews":
+            # Strategy 1: Text content detection FIRST (most reliable)
+            aria_label = (tab.get_attribute("aria-label") or "").lower()
+            tab_text = tab.text.lower() if tab.text else ""
+            
+            # Check if tab contains review keywords in text or aria-label
+            if any(word in aria_label for word in REVIEW_WORDS) or any(word in tab_text for word in REVIEW_WORDS):
                 return True
 
-            # Strategy 2: Role and aria attributes (accessibility detection)
+            # Strategy 2: Data attribute detection (use as secondary check only)
+            tab_index = tab.get_attribute("data-tab-index")
+            # NOTE: Don't blindly trust data-tab-index as it varies by language/region
+            # Only accept it if we also see review keywords
+            if tab_index == "reviews":  # Explicit reviews value
+                return True
+
+            # Strategy 3: Role and aria attributes (accessibility detection)
             role = tab.get_attribute("role")
             aria_selected = tab.get_attribute("aria-selected")
-            aria_label = (tab.get_attribute("aria-label") or "").lower()
 
             # Many review tabs have role="tab" and data attributes
             if role == "tab" and any(word in aria_label for word in REVIEW_WORDS):
