@@ -1238,10 +1238,35 @@ class GoogleReviewsScraper:
             # Add Google authentication cookies before navigating to Maps
             self.add_google_cookies(driver)
 
-            driver.get(url)
+            # Navigate to URL with English locale to ensure Reviews tab is shown
+            # Force English interface regardless of cookie locale
+            if '?' in url:
+                url_with_locale = f"{url}&hl=en"
+            else:
+                url_with_locale = f"{url}?hl=en"
+            
+            log.info(f"Navigating to {url_with_locale} (forcing English locale)")
+            driver.get(url_with_locale)
             wait.until(lambda d: "google.com/maps" in d.current_url)
+            
+            # SCREENSHOT 1: After loading page with cookies
+            try:
+                screenshot_path_1 = "/tmp/screenshot_after_cookies.png"
+                driver.save_screenshot(screenshot_path_1)
+                log.info(f"📸 Screenshot saved: {screenshot_path_1}")
+            except Exception as e:
+                log.warning(f"Could not save screenshot: {e}")
 
             self.dismiss_cookies(driver)
+            
+            # SCREENSHOT 2: Before clicking reviews tab
+            try:
+                screenshot_path_2 = "/tmp/screenshot_before_click.png"
+                driver.save_screenshot(screenshot_path_2)
+                log.info(f"📸 Screenshot saved: {screenshot_path_2}")
+            except Exception as e:
+                log.warning(f"Could not save screenshot: {e}")
+            
             self.click_reviews_tab(driver)
 
             # Extra wait after clicking reviews tab to ensure page loads
