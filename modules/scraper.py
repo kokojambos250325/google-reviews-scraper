@@ -30,7 +30,7 @@ log = logging.getLogger("scraper")
 
 # CSS Selectors
 PANE_SEL = 'div[role="main"] div.m6QErb.DxyBCb.kA9KIf.dS8AEf'
-CARD_SEL = "div[data-review-id]"
+CARD_SEL = "div.jftiEf"  # Updated Dec 2025 - Google changed DOM structure
 COOKIE_BTN = ('button[aria-label*="Accept" i],'
               'button[jsname="hZCF7e"],'
               'button[data-mdc-dialog-action="accept"]')
