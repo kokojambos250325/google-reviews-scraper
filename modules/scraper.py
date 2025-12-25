@@ -1190,6 +1190,13 @@ class GoogleReviewsScraper:
             log.info("Waiting for reviews to render...")
             time.sleep(3)
 
+            # CRITICAL: Scroll down to trigger lazy loading of reviews
+            log.info("Scrolling to trigger review loading...")
+            for i in range(5):
+                driver.execute_script("window.scrollBy(0, 800);")
+                time.sleep(0.5)
+            log.info("Initial scroll completed")
+
             # Use try-except to handle cases where the pane is not found
             # Try multiple selectors for the reviews pane
             pane = None
