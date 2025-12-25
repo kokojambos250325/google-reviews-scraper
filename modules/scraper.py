@@ -253,6 +253,36 @@ class GoogleReviewsScraper:
         log.info("SeleniumBase UC driver setup completed successfully")
         return driver
 
+    def add_google_cookies(self, driver: Chrome):
+        """
+        Add Google authentication cookies to driver for accessing reviews.
+        This helps bypass login requirements and see full review content.
+        """
+        try:
+            # Navigate to Google first to set cookies
+            driver.get("https://www.google.com")
+            time.sleep(1)
+            
+            # Add essential Google cookies
+            google_cookies = [
+                {"name": "NID", "value": "519=dummy_value", "domain": ".google.com"},
+                {"name": "CONSENT", "value": "YES+", "domain": ".google.com"},
+                {"name": "SOCS", "value": "CAESEwgDEgk2MTkzMzExNTUaAmVuIAEaBgiA_LyxBg", "domain": ".google.com"},
+            ]
+            
+            for cookie in google_cookies:
+                try:
+                    driver.add_cookie(cookie)
+                    log.debug(f"Added cookie: {cookie['name']}")
+                except Exception as e:
+                    log.debug(f"Could not add cookie {cookie['name']}: {e}")
+            
+            log.info("Google cookies added successfully")
+            return True
+        except Exception as e:
+            log.warning(f"Failed to add Google cookies: {e}")
+            return False
+
     def dismiss_cookies(self, driver: Chrome):
         """
         Dismiss cookie consent dialogs if present.
@@ -1125,6 +1155,9 @@ class GoogleReviewsScraper:
         try:
             driver = self.setup_driver(headless)
             wait = WebDriverWait(driver, 20)  # Reduced from 40 to 20 for faster timeout
+
+            # Add Google authentication cookies before navigating to Maps
+            self.add_google_cookies(driver)
 
             driver.get(url)
             wait.until(lambda d: "google.com/maps" in d.current_url)
