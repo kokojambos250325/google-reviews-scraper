@@ -203,7 +203,7 @@ class GoogleReviewsScraper:
                         uc=True,
                         headless=headless,
                         binary_location=chrome_binary,
-                        proxy=proxy_url,
+                        proxy=proxy_url if proxy_url else None,
                         page_load_strategy="normal"
                     )
                     log.info("Successfully created SeleniumBase UC driver with custom binary")
@@ -213,7 +213,7 @@ class GoogleReviewsScraper:
                     driver = Driver(
                         uc=True,
                         headless=headless,
-                        proxy=proxy_url,
+                        proxy=proxy_url if proxy_url else None,
                         page_load_strategy="normal"
                     )
                     log.info("Successfully created SeleniumBase UC driver with defaults")
@@ -221,7 +221,7 @@ class GoogleReviewsScraper:
                 driver = Driver(
                     uc=True,
                     headless=headless,
-                    proxy=proxy_url,
+                    proxy=proxy_url if proxy_url else None,
                     page_load_strategy="normal"
                 )
                 log.info("Successfully created SeleniumBase UC driver")
@@ -232,7 +232,7 @@ class GoogleReviewsScraper:
                 driver = Driver(
                     uc=True,
                     headless=headless,
-                    proxy=proxy_url,
+                    proxy=proxy_url if proxy_url else None,
                     page_load_strategy="normal",
                     incognito=True  # Use incognito mode for better stealth
                 )
