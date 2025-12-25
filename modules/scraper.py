@@ -356,10 +356,28 @@ class GoogleReviewsScraper:
                 if any(word in source for word in REVIEW_WORDS):
                     return True
 
-            # Strategy 4: Nested element detection
+            # Strategy 4: Nested element detection (Google Maps specific classes)
+            try:
+                # Check common Google Maps review tab inner classes
+                for inner_class in ['.Gpq6kf', '.NlVald', 'div', 'span']:
+                    try:
+                        inner_elements = tab.find_elements(By.CSS_SELECTOR, inner_class)
+                        for inner_elem in inner_elements:
+                            inner_text = (inner_elem.text or '').lower()
+                            inner_content = (inner_elem.get_attribute('textContent') or '').lower()
+                            
+                            if any(word in inner_text for word in REVIEW_WORDS) or any(word in inner_content for word in REVIEW_WORDS):
+                                log.debug(f"Found review keyword in nested element with class '{inner_class}': {inner_text or inner_content}")
+                                return True
+                    except:
+                        continue
+            except:
+                pass
+            
+            # Strategy 5: Check all child elements (fallback)
             try:
                 # Check text in all child elements
-                for child in tab.find_elements(By.CSS_SELECTOR, "*"):
+                for child in tab.find_elements(By.CSS_SELECTOR, '*'):
                     try:
                         child_text = child.text.lower() if child.text else ""
                         child_content = child.get_attribute("textContent").lower() or ""
@@ -372,13 +390,13 @@ class GoogleReviewsScraper:
             except:
                 pass
 
-            # Strategy 5: URL detection (some tabs have hrefs or data-hrefs with tell-tale values)
+            # Strategy 6: URL detection (some tabs have hrefs or data-hrefs with tell-tale values)
             for attr in ["href", "data-href", "data-url", "data-target"]:
                 attr_value = (tab.get_attribute(attr) or "").lower()
                 if attr_value and ("review" in attr_value or "rating" in attr_value):
                     return True
 
-            # Strategy 6: Class detection (some review tabs have specific classes)
+            # Strategy 7: Class detection (some review tabs have specific classes)
             tab_class = tab.get_attribute("class") or ""
             review_classes = ["review", "reviews", "rating", "ratings", "comments", "feedback", "g4jrve"]
             if any(cls in tab_class for cls in review_classes):
