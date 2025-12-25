@@ -233,8 +233,17 @@ class GoogleReviewsScraper:
         # Set page load timeout to avoid hanging
         driver.set_page_load_timeout(30)
 
-        # Set window size
-        driver.set_window_size(1400, 900)
+        # Set window size to desktop resolution
+        driver.set_window_size(1920, 1080)
+        
+        # Force desktop user agent to get full Google Maps UI
+        try:
+            driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+            })
+            log.info("Set desktop user agent to force full Google Maps UI")
+        except Exception as e:
+            log.debug(f"Could not set user agent: {e}")
 
         # Add additional stealth settings
         try:
@@ -1270,12 +1279,13 @@ class GoogleReviewsScraper:
                 log.info(f"💾 HTML saved: {html_path_1}")
                 
                 # Log tab structure for debugging
-                tabs_html = driver.execute_script(
-                    """return Array.from(document.querySelectorAll('[role="tab"]')).map(tab => 
-                        `<button role="tab" aria-label="${tab.getAttribute('aria-label')}" data-tab-index="${tab.getAttribute('data-tab-index')}">${tab.textContent}</button>`
-                    ).join('\n\n');"""
-                )
-                log.info(f"\n========== TABS HTML ==========\n{tabs_html}\n========== END TABS HTML ==========")
+                try:
+                    tabs_html = driver.execute_script(
+                        "return Array.from(document.querySelectorAll('[role=\"tab\"]')).map(tab => '<button>' + tab.textContent + '</button>').join('\\n\\n');"
+                    )
+                    log.info(f"\n========== TABS HTML ==========\n{tabs_html}\n========== END TABS HTML ==========")
+                except Exception as e:
+                    log.warning(f"Could not log tabs HTML: {e}")
             except Exception as e:
                 log.warning(f"Could not save screenshot/HTML: {e}")
 
