@@ -1154,10 +1154,9 @@ class GoogleReviewsScraper:
 
         url = self.config.get("url")
         headless = self.config.get("headless", True)
-        sort_by = self.config.get("sort_by", "relevance")
         stop_on_match = self.config.get("stop_on_match", False)
 
-        log.info(f"Starting scraper with settings: headless={headless}, sort_by={sort_by}")
+        log.info(f"Starting scraper with settings: headless={headless}")
         log.info(f"URL: {url}")
 
         # Initialize storage
@@ -1211,13 +1210,8 @@ class GoogleReviewsScraper:
             if "review" not in driver.current_url.lower():
                 log.warning("URL doesn't contain 'review' - might not be on reviews page")
 
-            # Try to set sort - but don't fail if it doesn't work
-            try:
-                self.set_sort(driver, sort_by)
-            except Exception as sort_error:
-                log.warning(f"Sort failed but continuing: {sort_error}")
-
-            # Add a longer wait after setting sort to allow results to load
+            # Sorting disabled - scraping in default order (most relevant)
+            # Add a longer wait after clicking reviews tab to allow results to load
             log.info("Waiting for reviews to render...")
             time.sleep(3)
 
