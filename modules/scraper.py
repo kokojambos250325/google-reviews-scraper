@@ -191,7 +191,12 @@ class GoogleReviewsScraper:
         # Determine if we're running in a container
         in_container = os.environ.get('CHROME_BIN') is not None
 
-        # Create driver without proxy parameter (will be set via Chrome options after)
+        # Create chromium args list for proxy if configured
+        chromium_args = []
+        if proxy_url:
+            chromium_args.append(f"--proxy-server={proxy_url}")
+            log.info(f"Adding Chrome arg: --proxy-server={proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+
         if in_container:
             chrome_binary = os.environ.get('CHROME_BIN')
             log.info(f"Container environment detected")
@@ -204,6 +209,7 @@ class GoogleReviewsScraper:
                         uc=True,
                         headless=headless,
                         binary_location=chrome_binary,
+                        chromium_arg=','.join(chromium_args) if chromium_args else None,
                         page_load_strategy="normal"
                     )
                     log.info("Successfully created SeleniumBase UC driver with custom binary")
@@ -213,6 +219,7 @@ class GoogleReviewsScraper:
                     driver = Driver(
                         uc=True,
                         headless=headless,
+                        chromium_arg=','.join(chromium_args) if chromium_args else None,
                         page_load_strategy="normal"
                     )
                     log.info("Successfully created SeleniumBase UC driver with defaults")
@@ -220,6 +227,7 @@ class GoogleReviewsScraper:
                 driver = Driver(
                     uc=True,
                     headless=headless,
+                    chromium_arg=','.join(chromium_args) if chromium_args else None,
                     page_load_strategy="normal"
                 )
                 log.info("Successfully created SeleniumBase UC driver")
@@ -230,6 +238,7 @@ class GoogleReviewsScraper:
                 driver = Driver(
                     uc=True,
                     headless=headless,
+                    chromium_arg=','.join(chromium_args) if chromium_args else None,
                     page_load_strategy="normal",
                     incognito=True  # Use incognito mode for better stealth
                 )
@@ -237,30 +246,6 @@ class GoogleReviewsScraper:
             except Exception as e:
                 log.error(f"Failed to create SeleniumBase driver: {e}")
                 raise
-        
-        # Set proxy via Chrome DevTools Protocol after driver is created
-        if proxy_url:
-            try:
-                # Parse proxy URL: http://user:pass@host:port
-                from urllib.parse import urlparse
-                parsed = urlparse(proxy_url)
-                
-                # Enable network proxy
-                driver.execute_cdp_cmd('Network.enable', {})
-                driver.execute_cdp_cmd('Network.setRequestInterception', {'patterns': [{'urlPattern': '*'}]})
-                
-                # Set proxy authentication
-                if parsed.username and parsed.password:
-                    driver.execute_cdp_cmd('Network.setExtraHTTPHeaders', {
-                        'headers': {
-                            'Proxy-Authorization': f'Basic {__import__("base64").b64encode(f"{parsed.username}:{parsed.password}".encode()).decode()}'
-                        }
-                    })
-                    log.info(f"Set proxy authentication for {parsed.username}")
-                
-                log.info("Proxy configured via CDP")
-            except Exception as e:
-                log.warning(f"Failed to set proxy via CDP: {e} - Continuing without proxy")
 
         # Set page load timeout to avoid hanging
         driver.set_page_load_timeout(30)
