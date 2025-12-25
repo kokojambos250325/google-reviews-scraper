@@ -181,12 +181,21 @@ class GoogleReviewsScraper:
         log.info(f"Python version: {platform.python_version()}")
         log.info("Using SeleniumBase UC Mode for enhanced anti-detection")
 
-        # Check for proxy configuration
-        proxy_url = os.environ.get('PROXY_URL')  # Format: http://user:pass@host:port
-        if proxy_url:
-            log.info(f"✅ Proxy configured: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
-        else:
+        # Check for proxy configuration (support multiple proxies for fallback)
+        proxy_urls = []
+        for i in ['', '_2', '_3', '_4', '_5']:
+            proxy_url = os.environ.get(f'PROXY_URL{i}')
+            if proxy_url:
+                proxy_urls.append(proxy_url)
+                log.info(f"✅ Proxy {len(proxy_urls)} configured: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+        
+        if not proxy_urls:
             log.info("⚠️ No proxy configured - using direct connection")
+            proxy_url = None
+        else:
+            proxy_url = proxy_urls[0]  # Use first proxy initially
+            log.info(f"Using primary proxy: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+            log.info(f"Total proxies available for fallback: {len(proxy_urls)}")
 
         # Determine if we're running in a container
         in_container = os.environ.get('CHROME_BIN') is not None
@@ -196,6 +205,10 @@ class GoogleReviewsScraper:
         if proxy_url:
             chromium_args.append(f"--proxy-server={proxy_url}")
             log.info(f"Adding Chrome arg: --proxy-server={proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+        
+        # Store proxy list for potential retry logic
+        self.proxy_urls = proxy_urls
+        self.current_proxy_index = 0
 
         if in_container:
             chrome_binary = os.environ.get('CHROME_BIN')
