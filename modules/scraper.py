@@ -400,6 +400,19 @@ class GoogleReviewsScraper:
         max_timeout = 25  # Maximum seconds to try
         end_time = time.time() + max_timeout
         attempts = 0
+        
+        # DEBUG: Log ALL tabs on page first
+        try:
+            all_tabs = driver.find_elements(By.CSS_SELECTOR, '[role="tab"]')
+            log.info(f"=== DEBUG: Found {len(all_tabs)} total tabs on page ===")
+            for idx, tab in enumerate(all_tabs):
+                try:
+                    log.info(f"Tab {idx}: text='{tab.text}', aria='{tab.get_attribute('aria-label')}', index='{tab.get_attribute('data-tab-index')}'")
+                except:
+                    pass
+            log.info("=== END TAB DEBUG ===")
+        except Exception as e:
+            log.warning(f"Could not log all tabs: {e}")
 
         # Define different selectors to try in order of reliability
         tab_selectors = [
