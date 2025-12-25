@@ -1254,8 +1254,14 @@ class GoogleReviewsScraper:
                 screenshot_path_1 = "/tmp/screenshot_after_cookies.png"
                 driver.save_screenshot(screenshot_path_1)
                 log.info(f"📸 Screenshot saved: {screenshot_path_1}")
+                
+                # Save HTML source
+                html_path_1 = "/tmp/page_after_cookies.html"
+                with open(html_path_1, 'w', encoding='utf-8') as f:
+                    f.write(driver.page_source)
+                log.info(f"💾 HTML saved: {html_path_1}")
             except Exception as e:
-                log.warning(f"Could not save screenshot: {e}")
+                log.warning(f"Could not save screenshot/HTML: {e}")
 
             self.dismiss_cookies(driver)
             
@@ -1264,8 +1270,14 @@ class GoogleReviewsScraper:
                 screenshot_path_2 = "/tmp/screenshot_before_click.png"
                 driver.save_screenshot(screenshot_path_2)
                 log.info(f"📸 Screenshot saved: {screenshot_path_2}")
+                
+                # Save HTML source with tab structure
+                html_path_2 = "/tmp/page_before_click.html"
+                with open(html_path_2, 'w', encoding='utf-8') as f:
+                    f.write(driver.page_source)
+                log.info(f"💾 HTML saved: {html_path_2}")
             except Exception as e:
-                log.warning(f"Could not save screenshot: {e}")
+                log.warning(f"Could not save screenshot/HTML: {e}")
             
             self.click_reviews_tab(driver)
 
