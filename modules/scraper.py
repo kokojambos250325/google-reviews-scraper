@@ -189,6 +189,13 @@ class GoogleReviewsScraper:
             for i in ['', '_2', '_3', '_4', '_5']:
                 proxy_url = os.environ.get(f'PROXY_URL{i}')
                 if proxy_url:
+                    # Replace port 10000 with random port 10000-10999 for rotation
+                    if ':10000' in proxy_url:
+                        import random
+                        random_port = random.randint(10000, 10999)
+                        proxy_url = proxy_url.replace(':10000', f':{random_port}')
+                        log.info(f"🔄 Using random port: {random_port} for IP rotation")
+                    
                     proxy_urls.append(proxy_url)
                     log.info(f"✅ Proxy {len(proxy_urls)} configured: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
             
