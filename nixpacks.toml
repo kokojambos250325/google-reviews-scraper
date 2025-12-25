@@ -1,5 +1,0 @@
-﻿[phases.setup]
-aptPkgs = ['chromium', 'chromium-driver']
-
-[start]
-cmd = 'python api_server.py'
