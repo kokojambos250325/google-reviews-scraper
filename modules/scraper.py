@@ -1255,6 +1255,19 @@ class GoogleReviewsScraper:
                 for sel in test_selectors:
                     count = len(driver.execute_script(f"return document.querySelectorAll('{sel}');"))
                     log.info(f"Selector '{sel}': {count} elements found")
+                
+                # Deep dive into div[jslog] elements
+                jslog_elements = driver.execute_script(
+                    """return Array.from(document.querySelectorAll('div[jslog]')).slice(0, 3).map(el => ({
+                        classes: el.className,
+                        jslog: el.getAttribute('jslog'),
+                        hasDataReviewId: el.hasAttribute('data-review-id'),
+                        dataReviewId: el.getAttribute('data-review-id'),
+                        children: el.children.length,
+                        innerText: el.innerText ? el.innerText.substring(0, 100) : 'no text'
+                    }));"""
+                )
+                log.info(f"First 3 div[jslog] elements structure: {jslog_elements}")
                 log.info("=== END DEBUG ===")
             except Exception as debug_error:
                 log.warning(f"Debug logging failed: {debug_error}")
