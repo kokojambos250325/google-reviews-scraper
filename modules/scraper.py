@@ -1234,6 +1234,31 @@ class GoogleReviewsScraper:
             last_scroll_position = 0
             scroll_stuck_count = 0
 
+            # DEBUG: Log what elements are actually on the page
+            try:
+                log.info("=== DEBUG: Analyzing page structure ===")
+                all_divs_with_data_review = driver.execute_script(
+                    "return Array.from(document.querySelectorAll('div[data-review-id]')).map(el => ({ tag: el.tagName, classes: el.className, hasDataReviewId: el.hasAttribute('data-review-id') }));"
+                )
+                log.info(f"Found {len(all_divs_with_data_review)} div elements with data-review-id attribute")
+                if all_divs_with_data_review:
+                    log.info(f"First element classes: {all_divs_with_data_review[0]}")
+                
+                # Try finding with different selectors
+                test_selectors = [
+                    "div[data-review-id]",
+                    "div.jftiEf",
+                    "div.jftiEf[data-review-id]",
+                    "div.fontBodyMedium",
+                    "div[jslog]"
+                ]
+                for sel in test_selectors:
+                    count = len(driver.execute_script(f"return document.querySelectorAll('{sel}');"))
+                    log.info(f"Selector '{sel}': {count} elements found")
+                log.info("=== END DEBUG ===")
+            except Exception as debug_error:
+                log.warning(f"Debug logging failed: {debug_error}")
+
             while attempts < max_attempts:
                 try:
                     cards = pane.find_elements(By.CSS_SELECTOR, CARD_SEL)
