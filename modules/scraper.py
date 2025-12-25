@@ -183,19 +183,25 @@ class GoogleReviewsScraper:
 
         # Check for proxy configuration (support multiple proxies for fallback)
         proxy_urls = []
-        for i in ['', '_2', '_3', '_4', '_5']:
-            proxy_url = os.environ.get(f'PROXY_URL{i}')
-            if proxy_url:
-                proxy_urls.append(proxy_url)
-                log.info(f"✅ Proxy {len(proxy_urls)} configured: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+        proxy_enabled = os.environ.get('USE_PROXY', 'false').lower() == 'true'
         
-        if not proxy_urls:
-            log.info("⚠️ No proxy configured - using direct connection")
-            proxy_url = None
+        if proxy_enabled:
+            for i in ['', '_2', '_3', '_4', '_5']:
+                proxy_url = os.environ.get(f'PROXY_URL{i}')
+                if proxy_url:
+                    proxy_urls.append(proxy_url)
+                    log.info(f"✅ Proxy {len(proxy_urls)} configured: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+            
+            if proxy_urls:
+                proxy_url = proxy_urls[0]  # Use first proxy initially
+                log.info(f"Using primary proxy: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
+                log.info(f"Total proxies available for fallback: {len(proxy_urls)}")
+            else:
+                log.info("⚠️ USE_PROXY=true but no PROXY_URL found")
+                proxy_url = None
         else:
-            proxy_url = proxy_urls[0]  # Use first proxy initially
-            log.info(f"Using primary proxy: {proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url}")
-            log.info(f"Total proxies available for fallback: {len(proxy_urls)}")
+            log.info("⚠️ Proxy disabled (USE_PROXY != true) - using direct connection")
+            proxy_url = None
 
         # Determine if we're running in a container
         in_container = os.environ.get('CHROME_BIN') is not None
