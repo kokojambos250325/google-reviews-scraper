@@ -2,10 +2,13 @@
 Proxy Manager for IP Rotation via Port Changes
 Based on proxy market support recommendations for residential proxies
 """
+import logging
 import os
 import time
 from typing import Optional
-from loguru import logger
+
+# Logger
+log = logging.getLogger("proxy_manager")
 
 
 class ProxyManager:
@@ -39,7 +42,7 @@ class ProxyManager:
                     "Proxy enabled but missing credentials. "
                     "Set PROXY_HOST, PROXY_USER, PROXY_PASS environment variables."
                 )
-            logger.info(
+            log.info(
                 f"🔄 Proxy Manager initialized: {self.PROXY_HOST}, "
                 f"ports {self.PROXY_PORT_START}-{self.PROXY_PORT_END}, "
                 f"max {self.MAX_REQUESTS_PER_IP} requests per IP"
@@ -63,7 +66,7 @@ class ProxyManager:
         
         proxy_url = f"http://{self.PROXY_USER}:{self.PROXY_PASS}@{self.PROXY_HOST}:{self.current_port}"
         
-        logger.debug(
+        log.debug(
             f"📡 Proxy: port {self.current_port}, "
             f"request {self.requests_on_current_ip}/{self.MAX_REQUESTS_PER_IP}"
         )
@@ -80,7 +83,7 @@ class ProxyManager:
         
         self.requests_on_current_ip = 0
         
-        logger.info(
+        log.info(
             f"🔄 IP rotated: port {old_port} → {self.current_port} "
             f"(max requests reached)"
         )
@@ -98,7 +101,7 @@ class ProxyManager:
         
         if time_since_last_request < self.REQUEST_DELAY:
             sleep_time = self.REQUEST_DELAY - time_since_last_request
-            logger.debug(f"⏳ Waiting {sleep_time:.1f}s between requests...")
+            log.debug(f"⏳ Waiting {sleep_time:.1f}s between requests...")
             time.sleep(sleep_time)
         
         self.last_request_time = time.time()
@@ -108,7 +111,7 @@ class ProxyManager:
         self.current_port = self.PROXY_PORT_START
         self.requests_on_current_ip = 0
         self.last_request_time = 0
-        logger.info("🔄 Proxy manager reset")
+        log.info("🔄 Proxy manager reset")
 
 
 # Singleton instance
