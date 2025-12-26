@@ -1305,9 +1305,49 @@ class GoogleReviewsScraper:
             else:
                 url_with_locale = f"{url}?hl=en"
             
-            log.info(f"Navigating to {url_with_locale} (forcing English locale)")
-            driver.get(url_with_locale)
-            wait.until(lambda d: "google.com/maps" in d.current_url)
+            # Retry logic with new proxy port on timeout
+            max_retries = 3
+            retry_count = 0
+            page_loaded = False
+            
+            while retry_count < max_retries and not page_loaded:
+                try:
+                    if retry_count > 0:
+                        log.warning(f"Retry attempt {retry_count}/{max_retries} - recreating driver with new proxy port")
+                        # Close old driver
+                        try:
+                            driver.quit()
+                        except:
+                            pass
+                        
+                        # Wait before retry
+                        time.sleep(3)
+                        
+                        # Create new driver (this will automatically select a new random port 10000-10999)
+                        driver = self.setup_driver(headless)
+                        wait = WebDriverWait(driver, 20)
+                        
+                        # Re-add cookies for new driver
+                        self.add_google_cookies(driver)
+                        try:
+                            driver.delete_cookie('NID')
+                            driver.delete_cookie('GOOGLE_ABUSE_EXEMPTION')
+                        except:
+                            pass
+                    
+                    log.info(f"Navigating to {url_with_locale} (forcing English locale) [attempt {retry_count + 1}]")
+                    driver.get(url_with_locale)
+                    wait.until(lambda d: "google.com/maps" in d.current_url)
+                    page_loaded = True
+                    log.info("Page loaded successfully")
+                    
+                except TimeoutException as e:
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        log.error(f"Failed to load page after {max_retries} retries")
+                        raise
+                    else:
+                        log.warning(f"Timeout loading page, will retry with new proxy port ({retry_count}/{max_retries})")
             
             # Wait for sidebar to load before taking screenshot
             try:
