@@ -205,7 +205,38 @@ class GoogleReviewsScraper:
                 log.info(f"Total proxies available for fallback: {len(proxy_urls)}")
             else:
                 log.info("тЪая╕П USE_PROXY=true but no PROXY_URL found")
-                proxy_url = None
+                
+                # Try building from separate credentials (PROXY_HOST + PROXY_USER/PASS)
+                proxy_host = os.environ.get('PROXY_HOST')
+                proxy_user = os.environ.get('PROXY_USER')
+                proxy_pass = os.environ.get('PROXY_PASS')
+                proxy_user2 = os.environ.get('PROXY_USER2')
+                proxy_pass2 = os.environ.get('PROXY_PASS2')
+                
+                if proxy_host and proxy_user and proxy_pass:
+                    import random
+                    
+                    # Account 1
+                    random_port = random.randint(10000, 10999)
+                    proxy_url_1 = f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{random_port}"
+                    proxy_urls.append(proxy_url_1)
+                    log.info(f"ЁЯФД Using random port: {random_port} for IP rotation (Account 1)")
+                    log.info(f"тЬЕ Proxy 1 configured: {proxy_host}:{random_port}")
+                    
+                    # Account 2 (if provided)
+                    if proxy_user2 and proxy_pass2:
+                        random_port_2 = random.randint(10000, 10999)
+                        proxy_url_2 = f"http://{proxy_user2}:{proxy_pass2}@{proxy_host}:{random_port_2}"
+                        proxy_urls.append(proxy_url_2)
+                        log.info(f"ЁЯФД Using random port: {random_port_2} for IP rotation (Account 2)")
+                        log.info(f"тЬЕ Proxy 2 configured: {proxy_host}:{random_port_2}")
+                        log.info(f"ЁЯМЙ 2 proxy accounts configured - up to 2000 unique IPs available")
+                    
+                    proxy_url = proxy_urls[0]
+                    log.info(f"Using primary proxy: {proxy_host}:{random_port}")
+                    log.info(f"Total proxies available for fallback: {len(proxy_urls)}")
+                else:
+                    proxy_url = None
         else:
             log.info("тЪая╕П Proxy disabled (USE_PROXY != true) - using direct connection")
             proxy_url = None
