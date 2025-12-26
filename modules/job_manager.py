@@ -141,10 +141,14 @@ class JobManager:
         Args:
             job_id: Job ID to run
         """
-        import signal
+        import threading
         
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Job exceeded maximum execution time")
+        # Flag to track if job was cancelled by timeout
+        timeout_occurred = threading.Event()
+        
+        def timeout_callback():
+            timeout_occurred.set()
+            log.error(f"Job {job_id} exceeded timeout")
         
         try:
             with self.lock:
@@ -154,43 +158,40 @@ class JobManager:
             # Create scraper with job config
             scraper = GoogleReviewsScraper(job.config)
             
-            # Hook into scraper progress (if available)
-            # This would require modifying the scraper to report progress
-            
             with self.lock:
                 job.progress = {"stage": "scraping", "message": "Scraping reviews in progress"}
             
             # Set job timeout (30 minutes max for scraping)
-            # Note: signal.alarm only works on Unix systems
             max_job_time = 1800  # 30 minutes
+            timeout_timer = threading.Timer(max_job_time, timeout_callback)
+            timeout_timer.daemon = True
+            timeout_timer.start()
+            
             try:
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(max_job_time)
-            except AttributeError:
-                # Windows doesn't support signal.alarm
-                log.warning("Job timeout not supported on this platform (Windows)")
-            
-            # Run the scraping
-            scraper.scrape()
-            
-            # Cancel timeout
-            try:
-                signal.alarm(0)
-            except AttributeError:
-                pass
-            
-            # Mark job as completed
-            with self.lock:
-                job.status = JobStatus.COMPLETED
-                job.completed_at = datetime.now()
-                job.progress = {"stage": "completed", "message": "Scraping completed successfully"}
+                # Run the scraping
+                scraper.scrape()
                 
-                # Try to get results count if available
-                # This would require scraper to return results
-                job.reviews_count = getattr(scraper, 'total_reviews', None)
-                job.images_count = getattr(scraper, 'total_images', None)
+                # Cancel timeout if job completed successfully
+                timeout_timer.cancel()
                 
-            log.info(f"Completed scraping job {job_id}")
+                if timeout_occurred.is_set():
+                    raise TimeoutError("Job exceeded maximum execution time")
+                
+                # Mark job as completed
+                with self.lock:
+                    job.status = JobStatus.COMPLETED
+                    job.completed_at = datetime.now()
+                    job.progress = {"stage": "completed", "message": "Scraping completed successfully"}
+                    
+                    # Try to get results count if available
+                    job.reviews_count = getattr(scraper, 'total_reviews', None)
+                    job.images_count = getattr(scraper, 'total_images', None)
+                    
+                log.info(f"Completed scraping job {job_id}")
+                
+            except Exception as scrape_error:
+                timeout_timer.cancel()
+                raise scrape_error
             
         except TimeoutError as e:
             log.error(f"Job {job_id} exceeded timeout: {e}")
