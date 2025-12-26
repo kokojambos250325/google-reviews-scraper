@@ -1667,6 +1667,11 @@ class GoogleReviewsScraper:
 
             return True
 
+        except TimeoutException as e:
+            # Re-raise timeout exceptions to mark job as failed
+            log.error(f"Timeout during scraping: {e}")
+            log.error(traceback.format_exc())
+            raise
         except Exception as e:
             log.error(f"Error during scraping: {e}")
             log.error(traceback.format_exc())
