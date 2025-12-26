@@ -545,6 +545,32 @@ class GoogleReviewsScraper:
         end_time = time.time() + max_timeout
         attempts = 0
         
+        # FIRST: Try direct click on reviews tab by aria-label (fastest, most reliable)
+        try:
+            log.info("Attempting direct click on reviews tab by aria-label")
+            review_aria_keywords = ["Отзыв", "Відгук", "Review", "review"]
+            
+            for keyword in review_aria_keywords:
+                all_tabs = driver.find_elements(By.CSS_SELECTOR, '[role="tab"]')
+                for tab in all_tabs:
+                    try:
+                        aria = tab.get_attribute('aria-label') or ''
+                        if keyword.lower() in aria.lower():
+                            log.info(f"Found reviews tab by aria-label containing '{keyword}': {aria}")
+                            # Try click immediately
+                            driver.execute_script("arguments[0].scrollIntoView({block:'center'});", tab)
+                            time.sleep(0.5)
+                            driver.execute_script("arguments[0].click();", tab)
+                            time.sleep(2)
+                            
+                            if self.verify_reviews_tab_clicked(driver):
+                                log.info("Successfully clicked reviews tab by aria-label!")
+                                return True
+                    except:
+                        continue
+        except Exception as e:
+            log.debug(f"Direct aria-label click failed: {e}")
+        
         # DEBUG: Log ALL tabs on page first
         try:
             all_tabs = driver.find_elements(By.CSS_SELECTOR, '[role="tab"]')
