@@ -284,6 +284,102 @@ async def download_screenshot(filename: str):
     return FileResponse(file_path, media_type=media_type, filename=filename)
 
 
+@app.get("/test/proxy", summary="Test Proxy Connection")
+async def test_proxy():
+    """Test proxy by loading multiple websites to verify connectivity"""
+    from seleniumbase import Driver
+    import time
+    
+    results = []
+    test_urls = [
+        "https://httpbin.org/ip",
+        "https://www.wikipedia.org",
+        "https://example.com",
+        "https://www.bing.com"
+    ]
+    
+    # Get proxy configuration
+    proxy_enabled = os.environ.get('USE_PROXY', 'false').lower() == 'true'
+    
+    if not proxy_enabled:
+        return {
+            "success": False,
+            "message": "Proxy is disabled (USE_PROXY != true)"
+        }
+    
+    # Build proxy URL
+    proxy_host = os.environ.get('PROXY_HOST')
+    proxy_user = os.environ.get('PROXY_USER')
+    proxy_pass = os.environ.get('PROXY_PASS')
+    
+    if not (proxy_host and proxy_user and proxy_pass):
+        return {
+            "success": False,
+            "message": "Proxy credentials not configured"
+        }
+    
+    import random
+    random_port = random.randint(10000, 10999)
+    proxy_url = f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{random_port}"
+    
+    driver = None
+    try:
+        # Create driver with proxy
+        driver = Driver(
+            uc=True,
+            headless=True,
+            chromium_arg=f"--proxy-server={proxy_url}",
+            page_load_strategy="normal"
+        )
+        driver.set_page_load_timeout(30)
+        
+        for url in test_urls:
+            start_time = time.time()
+            try:
+                driver.get(url)
+                load_time = time.time() - start_time
+                
+                # Get page title
+                try:
+                    title = driver.title
+                except:
+                    title = "N/A"
+                
+                results.append({
+                    "url": url,
+                    "status": "success",
+                    "load_time": round(load_time, 2),
+                    "title": title[:100]
+                })
+            except Exception as e:
+                load_time = time.time() - start_time
+                results.append({
+                    "url": url,
+                    "status": "failed",
+                    "load_time": round(load_time, 2),
+                    "error": str(e)[:200]
+                })
+        
+        return {
+            "success": True,
+            "proxy": f"{proxy_host}:{random_port}",
+            "results": results
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "results": results
+        }
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
+
+
 if __name__ == "__main__":
     import uvicorn
     
