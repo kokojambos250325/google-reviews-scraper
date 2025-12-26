@@ -135,9 +135,12 @@ async def start_scrape(request: ScrapeRequest, background_tasks: BackgroundTasks
     # Prepare config overrides
     config_overrides = {}
     
-    # Only include non-None values
+    # CRITICAL: Force headless mode on server (non-headless would crash container)
+    config_overrides['headless'] = True
+    
+    # Only include non-None values from request
     for field, value in request.dict().items():
-        if value is not None and field != "url":
+        if value is not None and field not in ["url", "headless"]:
             config_overrides[field] = value
     
     # Convert URL to string

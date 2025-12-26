@@ -141,6 +141,11 @@ class JobManager:
         Args:
             job_id: Job ID to run
         """
+        import signal
+        
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Job exceeded maximum execution time")
+        
         try:
             with self.lock:
                 job = self.jobs[job_id]
@@ -155,8 +160,24 @@ class JobManager:
             with self.lock:
                 job.progress = {"stage": "scraping", "message": "Scraping reviews in progress"}
             
+            # Set job timeout (30 minutes max for scraping)
+            # Note: signal.alarm only works on Unix systems
+            max_job_time = 1800  # 30 minutes
+            try:
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(max_job_time)
+            except AttributeError:
+                # Windows doesn't support signal.alarm
+                log.warning("Job timeout not supported on this platform (Windows)")
+            
             # Run the scraping
             scraper.scrape()
+            
+            # Cancel timeout
+            try:
+                signal.alarm(0)
+            except AttributeError:
+                pass
             
             # Mark job as completed
             with self.lock:
@@ -171,6 +192,14 @@ class JobManager:
                 
             log.info(f"Completed scraping job {job_id}")
             
+        except TimeoutError as e:
+            log.error(f"Job {job_id} exceeded timeout: {e}")
+            with self.lock:
+                job = self.jobs[job_id]
+                job.status = JobStatus.FAILED
+                job.completed_at = datetime.now()
+                job.error_message = f"Job timeout: {str(e)}"
+                job.progress = {"stage": "failed", "message": f"Job exceeded {max_job_time}s timeout"}
         except Exception as e:
             log.error(f"Error in scraping job {job_id}: {e}")
             with self.lock:
