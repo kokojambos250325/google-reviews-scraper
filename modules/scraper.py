@@ -560,8 +560,14 @@ class GoogleReviewsScraper:
 
         # Define different selectors to try in order of reliability
         tab_selectors = [
+            # PRIORITY: Direct aria-label match for Ukrainian/Russian
+            '[role="tab"][aria-label*="Отзыв"]',  # Russian "Отзывы"
+            '[role="tab"][aria-label*="Відгук"]',  # Ukrainian "Відгуки"
+            '[role="tab"][aria-label*="Review"]',  # English
+            
             # Direct tab selectors
             '[data-tab-index="1"]',  # Most common tab index
+            '[data-tab-index="2"]',  # Sometimes reviews is 2nd tab
             '[role="tab"][data-tab-index]',  # Any tab with index
             'button[role="tab"]',  # Button tabs
             'div[role="tab"]',  # Div tabs
@@ -730,8 +736,10 @@ class GoogleReviewsScraper:
                 # Review cards
                 'div[data-review-id]',
 
-                # Sort button (usually appears with reviews)
+                # Sort button (usually appears with reviews) - multilingual
                 'button[aria-label*="Sort" i]',
+                'button[aria-label*="Сортиров" i]',  # Russian "Сортировка"
+                'button[aria-label*="Сортув" i]',  # Ukrainian "Сортування"
 
                 # Review rating elements
                 'span[role="img"][aria-label*="star" i]',
