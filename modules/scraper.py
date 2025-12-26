@@ -185,7 +185,10 @@ class GoogleReviewsScraper:
         proxy_urls = []
         proxy_enabled = os.environ.get('USE_PROXY', 'false').lower() == 'true'
         
-        if proxy_enabled:
+        if not proxy_enabled:
+            log.info("⚠️ Proxy disabled (USE_PROXY != true) - using direct connection")
+            proxy_url = None
+        elif proxy_enabled:
             for i in ['', '_2', '_3', '_4', '_5']:
                 proxy_url = os.environ.get(f'PROXY_URL{i}')
                 if proxy_url:
