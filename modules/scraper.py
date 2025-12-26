@@ -312,10 +312,19 @@ class GoogleReviewsScraper:
         
         # Force desktop user agent to get full Google Maps UI
         try:
+            # Rotate user agents to avoid fingerprinting
+            import random
+            user_agents = [
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+            ]
+            selected_ua = random.choice(user_agents)
             driver.execute_cdp_cmd('Network.setUserAgentOverride', {
-                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+                "userAgent": selected_ua
             })
-            log.info("Set desktop user agent to force full Google Maps UI")
+            log.info(f"Set random user agent for anti-detection")
         except Exception as e:
             log.debug(f"Could not set user agent: {e}")
 
@@ -1316,10 +1325,16 @@ class GoogleReviewsScraper:
         driver = None
         try:
             driver = self.setup_driver(headless)
-            wait = WebDriverWait(driver, 20)  # Reduced from 40 to 20 for faster timeout
+            wait = WebDriverWait(driver, 60)  # Increased from 20 to 60 seconds for slow proxies
 
             # Add Google authentication cookies before navigating to Maps
             self.add_google_cookies(driver)
+            
+            # Add random delay (2-5 seconds) to mimic human behavior
+            import random
+            delay = random.uniform(2.0, 5.0)
+            log.info(f"Adding random delay: {delay:.2f} seconds (anti-detection)")
+            time.sleep(delay)
             
             # Remove locale-specific cookies to force English
             try:
@@ -1356,7 +1371,7 @@ class GoogleReviewsScraper:
                         
                         # Create new driver (this will automatically select a new random port 10000-10999)
                         driver = self.setup_driver(headless)
-                        wait = WebDriverWait(driver, 20)
+                        wait = WebDriverWait(driver, 60)  # Increased timeout for retry attempts
                         
                         # Re-add cookies for new driver
                         self.add_google_cookies(driver)
